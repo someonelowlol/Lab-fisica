@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio Virtual de Caída Libre</title>
+    
+    <!-- Tailwind CSS para los estilos y la responsividad -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js para las gráficas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Fuente Inter para un diseño moderno -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Gris claro de fondo */
+        }
+        /* Sombras suaves para las tarjetas */
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+        }
+        canvas#animacion {
+            width: 100%;
+            max-width: 300px;
+            height: 400px;
+            border-radius: 0.5rem;
+            background: linear-gradient(to bottom, #87CEEB 0%, #E0F6FF 80%, #8B4513 80%, #8B4513 100%);
+            border: 1px solid #d1d5db;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Encabezado Principal -->
+    <header class="bg-blue-600 text-white shadow-md py-6 mb-8">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <h1 class="text-3xl font-bold tracking-tight">Laboratorio Virtual de Caída Libre</h1>
+            <p class="mt-2 text-blue-100 text-sm md:text-base">Experimenta y analiza la cinemática de los cuerpos en caída libre (g = 9.8 m/s²)</p>
+        </div>
+    </header>
+
+    <!-- Contenedor Principal (Grid Responsivo) -->
+    <main class="max-w-7xl mx-auto px-4 pb-12 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- COLUMNA IZQUIERDA: Controles y Resultados -->
+        <div class="lg:col-span-3 space-y-6">
+            
+            <!-- Panel de Controles -->
+            <div class="card">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Variables de Lanzamiento</h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label for="altura" class="block text-sm font-medium text-gray-600 mb-1">Altura del objeto (m)</label>
+                        <input type="number" id="altura" min="0.1" step="0.1" value="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                    <div>
+                        <label for="masa" class="block text-sm font-medium text-gray-600 mb-1">Masa del objeto (kg)</label>
+                        <input type="number" id="masa" min="0.1" step="0.1" value="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all">
+                    </div>
+                </div>
+
+                <div class="mt-6 grid grid-cols-2 gap-3">
+                    <button id="btn-iniciar" onclick="iniciarSimulacion()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex justify-center items-center">
+                        Iniciar
+                    </button>
+                    <button id="btn-reiniciar" onclick="reiniciarSimulador()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold py-2 px-4 rounded-lg transition-colors duration-200 flex justify-center items-center" disabled>
+                        Reiniciar
+                    </button>
+                </div>
+                <p id="error-msg" class="text-red-500 text-xs mt-2 hidden">Por favor ingresa valores válidos mayores a 0.</p>
+            </div>
+
+            <!-- Panel de Resultados Actuales -->
+            <div class="card bg-blue-50 border border-blue-100">
+                <h2 class="text-xl font-semibold mb-4 text-blue-800 border-b border-blue-200 pb-2">Resultados del Ensayo</h2>
+                <div class="space-y-4">
+                    <div>
+                        <span class="block text-sm font-medium text-blue-600">Tiempo de caída:</span>
+                        <div class="text-2xl font-bold text-gray-800"><span id="res-tiempo">--</span> <span class="text-base font-normal text-gray-500">s</span></div>
+                    </div>
+                    <div>
+                        <span class="block text-sm font-medium text-blue-600">Velocidad final:</span>
+                        <div class="text-2xl font-bold text-gray-800"><span id="res-velocidad">--</span> <span class="text-base font-normal text-gray-500">m/s</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Condiciones constantes -->
+            <div class="bg-gray-100 rounded-lg p-4 text-sm text-gray-600 border border-gray-200">
+                <strong>Condiciones Constantes:</strong>
+                <ul class="list-disc ml-5 mt-1">
+                    <li>Gravedad (g): 9.8 m/s²</li>
+                    <li>Resistencia del aire: Despreciable</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- COLUMNA CENTRAL: Animación -->
+        <div class="lg:col-span-3 card flex flex-col items-center justify-center">
+            <h2 class="text-lg font-semibold mb-2 text-gray-700 w-full text-center">Simulación</h2>
+            <!-- El canvas tiene el cielo y la tierra dibujados por CSS en el background -->
+            <canvas id="animacion" width="300" height="400"></canvas>
+            <p class="text-xs text-gray-500 mt-3 text-center">La animación representa visualmente la caída.</p>
+        </div>
+
+        <!-- COLUMNA DERECHA: Tabla de Datos y Gráficas -->
+        <div class="lg:col-span-6 space-y-6">
+            
+            <!-- Tabla de Resultados -->
+            <div class="card overflow-hidden">
+                <h2 class="text-xl font-semibold mb-4 text-gray-700 border-b pb-2">Tabla de Datos</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">Ensayo</th>
+                                <th scope="col" class="px-4 py-3">Altura (m)</th>
+                                <th scope="col" class="px-4 py-3">Masa (kg)</th>
+                                <th scope="col" class="px-4 py-3">Tiempo (s)</th>
+                                <th scope="col" class="px-4 py-3">Vel. Final (m/s)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabla-datos">
+                            <!-- Los datos se insertarán aquí con JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div id="tabla-vacia" class="text-center text-gray-400 py-4 text-sm">
+                    Aún no hay datos. Realiza un lanzamiento para comenzar.
+                </div>
+            </div>
+
+            <!-- Gráficas -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card">
+                    <canvas id="grafica-altura"></canvas>
+                </div>
+                <div class="card">
+                    <canvas id="grafica-masa"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Lógica de la Aplicación -->
+    <script>
+        // --- Constantes y Variables Globales ---
+        const g = 9.8; // Aceleración de la gravedad en m/s^2
+        let ensayos = 0;
+        let historiaDatos = [];
+        
+        // Variables para la animación
+        let animando = false;
+        let animacionStartTime = null;
+        let tTotalCalculado = 0;
+        let vFinalCalculada = 0;
+        let alturaActual = 0;
+        let masaActual = 0;
+        let reqAnimFrame;
+
+        // Referencias al Canvas
+        const canvas = document.getElementById('animacion');
+        const ctx = canvas.getContext('2d');
+        const W = canvas.width;
+        const H = canvas.height;
+        const GROUND_HEIGHT = H * 0.2; // 20% del canvas es suelo (coincide visualmente con el gradiente css)
+        const BALL_RADIUS = 12;
+
+        // Instancias de Chart.js
+        let chartAltura, chartMasa;
+
+        // --- Inicialización ---
+        window.onload = function() {
+            dibujarEscena(0, 5); // Dibujar estado inicial
+            inicializarGraficas();
+        };
+
+        // --- Lógica de la Simulación ---
+        function iniciarSimulacion() {
+            const inputAltura = parseFloat(document.getElementById('altura').value);
+            const inputMasa = parseFloat(document.getElementById('masa').value);
+            const errorMsg = document.getElementById('error-msg');
+
+            // Validación básica
+            if (isNaN(inputAltura) || inputAltura <= 0 || isNaN(inputMasa) || inputMasa <= 0) {
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+            errorMsg.classList.add('hidden');
+
+            // Deshabilitar botón Iniciar y Controles
+            document.getElementById('btn-iniciar').disabled = true;
+            document.getElementById('btn-iniciar').classList.add('opacity-50', 'cursor-not-allowed');
+            document.getElementById('altura').disabled = true;
+            document.getElementById('masa').disabled = true;
+            document.getElementById('btn-reiniciar').disabled = true; // Deshabilitado hasta que caiga
+
+            // Limpiar resultados anteriores en pantalla
+            document.getElementById('res-tiempo').innerText = '--';
+            document.getElementById('res-velocidad').innerText = '--';
+
+            // Cálculos Físicos
+            alturaActual = inputAltura;
+            masaActual = inputMasa;
+            tTotalCalculado = Math.sqrt((2 * alturaActual) / g);
+            vFinalCalculada = g * tTotalCalculado;
+
+            // Iniciar Animación
+            animando = true;
+            animacionStartTime = null;
+            reqAnimFrame = requestAnimationFrame(loopAnimacion);
+        }
+
+        function loopAnimacion(timestamp) {
+            if (!animando) return;
+            if (!animacionStartTime) animacionStartTime = timestamp;
+
+            let tiempoTranscurrido = (timestamp - animacionStartTime) / 1000; // Segundos reales
+
+            // Factor de velocidad: Si el tiempo real es muy grande, aceleramos la animación visual 
+            // para mantener la UX dinámica (máximo ~2.5 segundos de animación visual)
+            let speedFactor = 1;
+            if (tTotalCalculado > 2.5) {
+                speedFactor = tTotalCalculado / 2.5;
+            }
+            
+            let tiempoSimulacion = tiempoTranscurrido * speedFactor;
+
+            // Verificar si ya tocó el suelo
+            if (tiempoSimulacion >= tTotalCalculado) {
+                tiempoSimulacion = tTotalCalculado;
+                animando = false;
+            }
+
+            // Calcular distancia caída en este instante: y = 0.5 * g * t^2
+            let distanciaCaida = 0.5 * g * Math.pow(tiempoSimulacion, 2);
+
+            // Dibujar frame
+            dibujarEscena(distanciaCaida, alturaActual);
+
+            if (animando) {
+                reqAnimFrame = requestAnimationFrame(loopAnimacion);
+            } else {
+                finalizarEnsayo();
+            }
+        }
+
+        function dibujarEscena(distanciaCaida, alturaMax) {
+            // Limpiar Canvas (El fondo está hecho con CSS, usaremos clearRect que hace transparente el área)
+            ctx.clearRect(0, 0, W, H);
+
+            // Zona de movimiento permitida (desde arriba del cielo hasta ras de suelo)
+            const areaCielo = H - GROUND_HEIGHT;
+            const yMin = BALL_RADIUS + 5; // Margen superior
+            const yMax = areaCielo - BALL_RADIUS; // Suelo
+            const rangoPixeles = yMax - yMin;
+
+            // Proporción de caída (0.0 en inicio, 1.0 al final)
+            let proporcionCaida = 0;
+            if (alturaMax > 0) {
+                proporcionCaida = distanciaCaida / alturaMax;
+                // Prevenir que se hunda por errores de redondeo
+                if(proporcionCaida > 1) proporcionCaida = 1; 
+            }
+
+            // Posición Y en pixeles
+            const pelotaY = yMin + (proporcionCaida * rangoPixeles);
+            const pelotaX = W / 2;
+
+            // Dibujar Regla/Eje a la izquierda
+            ctx.beginPath();
+            ctx.moveTo(30, yMin);
+            ctx.lineTo(30, yMax);
+            ctx.strokeStyle = '#6b7280'; // gray-500
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Marcas de la regla (0 arriba, max abajo)
+            ctx.fillStyle = '#4b5563'; // gray-600
+            ctx.font = '10px Inter';
+            ctx.textAlign = 'right';
+            
+            // Marca Superior (Altura = max)
+            ctx.beginPath(); ctx.moveTo(25, yMin); ctx.lineTo(35, yMin); ctx.stroke();
+            ctx.fillText(alturaMax + 'm', 22, yMin + 4);
+            
+            // Marca Inferior (Altura = 0)
+            ctx.beginPath(); ctx.moveTo(25, yMax); ctx.lineTo(35, yMax); ctx.stroke();
+            ctx.fillText('0m', 22, yMax + 4);
+
+            // Dibujar la Pelota
+            ctx.beginPath();
+            ctx.arc(pelotaX, pelotaY, BALL_RADIUS, 0, Math.PI * 2);
+            // Sombra interna/gradiente para que parezca una esfera
+            let gradiente = ctx.createRadialGradient(pelotaX - 3, pelotaY - 3, 2, pelotaX, pelotaY, BALL_RADIUS);
+            gradiente.addColorStop(0, '#ef4444'); // red-500
+            gradiente.addColorStop(1, '#991b1b'); // red-800
+            ctx.fillStyle = gradiente;
+            ctx.fill();
+            
+            // Contorno pelota
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#7f1d1d'; // red-900
+            ctx.stroke();
+            
+            // Efecto de movimiento (líneas) si está cayendo rápido
+            if (animando && proporcionCaida > 0.05 && proporcionCaida < 0.95) {
+                ctx.beginPath();
+                ctx.moveTo(pelotaX, pelotaY - BALL_RADIUS - 2);
+                ctx.lineTo(pelotaX, pelotaY - BALL_RADIUS - 15);
+                ctx.moveTo(pelotaX - 5, pelotaY - BALL_RADIUS - 2);
+                ctx.lineTo(pelotaX - 3, pelotaY - BALL_RADIUS - 10);
+                ctx.moveTo(pelotaX + 5, pelotaY - BALL_RADIUS - 2);
+                ctx.lineTo(pelotaX + 3, pelotaY - BALL_RADIUS - 10);
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            }
+        }
+
+        function finalizarEnsayo() {
+            ensayos++;
+            
+            // Formatear resultados a 2 decimales
+            const tFormateado = tTotalCalculado.toFixed(2);
+            const vFormateado = vFinalCalculada.toFixed(2);
+
+            // 1. Mostrar resultados en pantalla
+            document.getElementById('res-tiempo').innerText = tFormateado;
+            document.getElementById('res-velocidad').innerText = vFormateado;
+
+            // 2. Guardar en tabla
+            const tbody = document.getElementById('tabla-datos');
+            const tr = document.createElement('tr');
+            tr.className = 'bg-white border-b hover:bg-gray-50';
+            tr.innerHTML = `
+                <td class="px-4 py-3 font-medium text-gray-900">${ensayos}</td>
+                <td class="px-4 py-3">${alturaActual.toFixed(2)}</td>
+                <td class="px-4 py-3">${masaActual.toFixed(2)}</td>
+                <td class="px-4 py-3 font-semibold text-blue-600">${tFormateado}</td>
+                <td class="px-4 py-3">${vFormateado}</td>
+            `;
+            tbody.appendChild(tr);
+            
+            // Ocultar mensaje de tabla vacía
+            document.getElementById('tabla-vacia').style.display = 'none';
+
+            // 3. Actualizar Gráficas
+            actualizarGraficas(tTotalCalculado, alturaActual, masaActual);
+
+            // 4. Habilitar botón de reinicio (y deshabilitar iniciar hasta que se reinicie)
+            document.getElementById('btn-reiniciar').disabled = false;
+            document.getElementById('btn-reiniciar').classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-200', 'text-gray-700');
+            document.getElementById('btn-reiniciar').classList.add('bg-green-600', 'text-white', 'hover:bg-green-700');
+        }
+
+        function reiniciarSimulador() {
+            // Cancelar cualquier animación trabada por si acaso
+            animando = false;
+            cancelAnimationFrame(reqAnimFrame);
+
+            // Resetear textos
+            document.getElementById('res-tiempo').innerText = '--';
+            document.getElementById('res-velocidad').innerText = '--';
+
+            // Redibujar la bola arriba usando los valores actuales del input
+            const inputAltura = parseFloat(document.getElementById('altura').value) || 5;
+            dibujarEscena(0, inputAltura);
+
+            // Restaurar botones e inputs
+            document.getElementById('altura').disabled = false;
+            document.getElementById('masa').disabled = false;
+            
+            const btnIniciar = document.getElementById('btn-iniciar');
+            btnIniciar.disabled = false;
+            btnIniciar.classList.remove('opacity-50', 'cursor-not-allowed');
+
+            const btnReiniciar = document.getElementById('btn-reiniciar');
+            btnReiniciar.disabled = true;
+            btnReiniciar.classList.remove('bg-green-600', 'text-white', 'hover:bg-green-700');
+            btnReiniciar.classList.add('bg-gray-200', 'text-gray-700');
+        }
+
+        // --- Gráficas con Chart.js ---
+        function inicializarGraficas() {
+            const ctxAltura = document.getElementById('grafica-altura').getContext('2d');
+            const ctxMasa = document.getElementById('grafica-masa').getContext('2d');
+
+            // Configuración común para scatter (puntos de dispersión)
+            const commonOptions = {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `Tiempo: ${context.parsed.x.toFixed(2)}s, Y: ${context.parsed.y.toFixed(2)}`;
+                            }
+                        }
+                    }
+                }
+            };
+
+            // Gráfica 1: Altura vs Tiempo (Eje Y = Altura, Eje X = Tiempo)
+            chartAltura = new Chart(ctxAltura, {
+                type: 'scatter',
+                data: {
+                    datasets: [{
+                        label: 'Ensayos (Altura vs Tiempo)',
+                        data: [], // Arreglo de objetos {x, y}
+                        backgroundColor: '#3b82f6', // blue-500
+                        borderColor: '#2563eb', // blue-600
+                        pointRadius: 6,
+                        pointHoverRadius: 8
+                    }]
+                },
+                options: {
+                    ...commonOptions,
+                    scales: {
+                        x: { 
+                            title: { display: true, text: 'Tiempo de caída (s)' },
+                            beginAtZero: true
+                        },
+                        y: { 
+                            title: { display: true, text: 'Altura (m)' },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Altura vs Tiempo',
+                    
